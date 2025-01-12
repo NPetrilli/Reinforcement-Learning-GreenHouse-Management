@@ -151,3 +151,86 @@ ax3.set_zlabel('Valore')
 
 plt.tight_layout()
 plt.show()
+
+
+
+# import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
+# import numpy as np
+#
+# def plot_V_policy(V=None, policy=None, index_min=0, index_max=None):
+#     subplot_titles = []
+#     if V is not None:
+#         subplot_titles.append("Value")
+#         cmap = plt.get_cmap('tab20b')
+#         colors = [cmap(i / 19) for i in range(20)]
+#         hex_colors = [
+#             'rgba(' + ','.join([f'{int(np.round(rgb * 255))}' for rgb in color[:3]]) + f',{color[3]})'
+#             for color in colors
+#         ]
+#
+#         colorscale_V = [[i / 19, color] for i, color in enumerate(hex_colors)]
+#     if policy is not None:
+#         subplot_titles.append("Policy")
+#
+#     fig = make_subplots(rows=1, cols=len(subplot_titles), subplot_titles=subplot_titles)
+#
+#
+#     if V is not None:
+#
+#         fig.add_trace(
+#             go.Heatmap(
+#                 z=np.flipud(V[index_min, :, :]),
+#                 x=np.arange(V.shape[2]),  # Assuming square matrix
+#                 y=np.arange(V.shape[1]),
+#                 colorscale=colorscale_V,
+#                 colorbar=dict(len=1, x=0.45),
+#                 zmin=0,
+#                 zmax=100,
+#                 showscale=True
+#             ),
+#             row=1, col=1
+#         )
+#
+#     if policy is not None:
+#         fig.add_trace(
+#             go.Heatmap(
+#                 z=np.flipud(policy[index_min, :, :]),
+#                 colorscale='Cividis',
+#                 zmin=policy.min(),
+#                 zmax=policy.max(),
+#                 colorbar=dict(x=1)
+#             ),
+#             row=1, col=len(subplot_titles)
+#         )
+#
+#     # Aggiungere linee per formare una griglia definita
+#     if V is not None:
+#         for i in range(V.shape[2] + 1):
+#             fig.add_shape(type="line", x0=i-0.5, y0=-0.5, x1=i-0.5, y1=V.shape[1]-0.5, line=dict(color="black", width=1), row=1, col=1)
+#             fig.add_shape(type="line", y0=i-0.5, x0=-0.5, y1=i-0.5, x1=V.shape[2]-0.5, line=dict(color="black", width=1), row=1, col=1)
+#
+#     if policy is not None:
+#         for i in range(policy.shape[2] + 1):
+#             fig.add_shape(type="line", x0=i-0.5, y0=-0.5, x1=i-0.5, y1=policy.shape[1]-0.5, line=dict(color="black", width=1), row=1, col=len(subplot_titles))
+#             fig.add_shape(type="line", y0=i-0.5, x0=-0.5, y1=i-0.5, x1=policy.shape[2]-0.5, line=dict(color="black", width=1), row=1, col=len(subplot_titles))
+#
+#     fig.update_layout(
+#         height=500,
+#         width=1000,
+#         sliders=[{
+#             "pad": {"t": 50},
+#             "currentvalue": {"prefix": "Index: "},
+#             "steps": [
+#                 {
+#                     "method": "update",
+#                     "args": [{"z": [np.flipud(V[i, :, :]) if V is not None else None,
+#                                    np.flipud(policy[i, :, :]) if policy is not None else None]}],
+#                     "label": str(i)
+#                 } for i in range(index_min, index_max + 1)
+#             ]
+#         }]
+#     )
+#
+#     return fig
+#plot_V_policy(V_MC, policy_MC, index_min=1, index_max=4)
