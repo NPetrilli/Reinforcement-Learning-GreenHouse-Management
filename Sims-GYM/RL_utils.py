@@ -19,9 +19,11 @@ def pars_loader(N_episodes,alpha,gamma,eps,pt,ph,growth_range,factor_range,ci_ra
         1: {'Tem': [[3, 4, 5], [2, 6, 7, 8], [1, 9], [0, 10]], 'Hum': [[6, 7, 8], [2, 3, 4, 5], [1, 9], [0, 10]]},
         2: {'Tem': [[6, 7, 8], [4, 5], [1, 2, 3, 9], [0, 10]], 'Hum': [[4, 5, 6], [2, 3, 7, 8], [1, 9], [0, 10]]},
         3: {'Tem': [[5, 6, 7], [3, 4, 8], [1, 2, 9], [0, 10]], 'Hum': [[6, 7, 8], [3, 4, 5], [1, 2, 9], [0, 10]]},
-        4: {'Tem': [[6, 7, 8], [4, 5, 9], [1, 2, 3], [0, 10]], 'Hum': [[7, 8, 9], [4, 5, 6], [1, 2, 3], [0, 10]]}}
+        4: {'Tem': [[6, 7, 8], [4, 5, 9], [1, 2, 3], [0, 10]], 'Hum': [[7, 8, 9], [4, 5, 6], [1, 2, 3], [0, 10]]}},
+    'file_name':'Results/Data_N_'+str(N_episodes)+'_alpha_'+str(alpha)+'_gamma_'+str(gamma)+'_eps_'+str(eps)+'_pt_'+str(pt)+'_ph_'+str(ph)+'.pickle'
     }
     pars['nstates']=(pars['growth_range']+1,pars['factor_range']+1,pars['factor_range']+1)
+
     return pars
 
 def load_images(base_path, count=None, scale=None):
@@ -90,7 +92,31 @@ def epsilon_greedy(pars,state,Q):
      a = np.argmax(Q[state[0],state[1],state[2],:])
     return a
 
-def make_episode_env(env, policy, pars, x0=None):
+def growth_to_matrix(growth, temp, hum, range_tem, range_hum):
+    #At least one red: bad condition to growth -2
+    if temp in range_tem[3] or hum in range_hum[3]:
+      growth+=-2
+    #At least one orange : poor condition to growth -1
+    elif temp in range_tem[2] or hum in range_hum[2]:
+      growth+=-1
+    #At least one yellow : good condition to growth +0
+    elif temp in range_tem[1] or hum in range_hum[1]:
+     growth+=0
+    else:
+     #Only green : Optimal condition to growth +1
+     growth+=1
+    return growth
+
+
+def condition_to_matrix(pars):
+    gr = np.zeros((pars['nstates'][0], pars['nstates'][1], pars['nstates'][2]))
+    for i in np.arange(1, 5):
+        for j in range(pars['nstates'][1]):
+            for k in range(pars['nstates'][2]):
+                range_tem, range_hum = pars['opt_range'][i]['Tem'], pars['opt_range'][i]['Hum']
+                gr[i, j, k] = growth_to_matrix(0, j, k, range_tem, range_hum)
+    return gr
+def make_episode_env(env, policy, pars,sim=False, x0=None):
     """
     :param env: Environment to render
     :param policy: Policy to use
@@ -109,7 +135,7 @@ def make_episode_env(env, policy, pars, x0=None):
     env.render()
 
     while not done:
-        if np.random.random() < pars['eps']:
+        if np.random.random() < pars['eps'] and sim==False:
             a = np.random.choice(pars['action_set'])
         else:
             a = policy[seq_state[-1]]

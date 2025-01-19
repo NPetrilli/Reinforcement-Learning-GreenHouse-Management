@@ -4,8 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from scipy.ndimage import uniform_filter1d
+from plotly.subplots import make_subplots
 
-def plot_state_value_function_single(matrix, index, title):
+def plot_V_single(matrix, index, title):
     fig = plt.figure(figsize=(12, 6))
     ax = plt.subplot(1, 2, 1)
     matrix_flipped = np.flipud(matrix[index, :, :])
@@ -167,33 +168,6 @@ def training_plot(data_collection, win_length):
     plt.tight_layout()
     plt.show()
 
-
-
-
-# def training_plot2(data_collection, win_length, pars, sample_rate=1):
-#     fig, ax = plt.subplots(figsize=(6, 4))  # Usando un solo asse
-#     # Processa i dati per ciascun metodo
-#     for episode_rewards, _, label in data_collection:  # Ignora episode_lengths
-#         if pars['N_episodes'] is not None and pars['N_episodes'] < len(episode_rewards):
-#             episode_rewards = episode_rewards[:pars['N_episodes']]
-#
-#         if len(episode_rewards) >= win_length:
-#             rewards = uniform_filter1d(episode_rewards, size=win_length, mode='reflect') / win_length
-#
-#             sampled_indices = np.arange(0, len(rewards), sample_rate)
-#             sampled_rewards = rewards[sampled_indices]
-#
-#             # Plot dei dati campionati
-#             ax.plot(sampled_indices, sampled_rewards, label=f"{label}")
-#
-#     ax.set_title("Episode Returns")
-#     ax.legend()
-#     ax.grid(True)
-#
-#     plt.tight_layout()
-#     plt.show()
-
-
 def training_plot2(data_collection, win_length, sample_rate=1):
     fig, ax = plt.subplots(figsize=(6, 4))  # Usando un solo asse
     # Processa i dati per ciascun metodo
@@ -253,5 +227,264 @@ def training_plot2(data_collection, win_length, sample_rate=1):
 #     plt.tight_layout()
 #     plt.show()
 
+def plot_V_policy(V, Pi, title):
+    cmap = plt.get_cmap('tab20b')
+    colors = [cmap(i / 19) for i in range(20)]
+    hex_colors = [
+        'rgba(' + ','.join([f'{int(np.round(rgb * 255))}' for rgb in color[:3]]) + f',{color[3]})'
+        for color in colors
+    ]
+
+    colorscale = [[i / 19, color] for i, color in enumerate(hex_colors)]
+    n_slices = V.shape[0]
+
+    fig = make_subplots(
+        rows=1, cols=2,
+        subplot_titles=('State Value function', 'Policy'),
+        specs=[[{}, {}]],
+        horizontal_spacing=0.13
+    )
+
+    for i in range(n_slices):
+        visible = (i == 0)
+        fig.add_trace(
+            go.Heatmap(
+                z=V[i, :, :],
+                colorscale=colorscale,
+                zmin=0, zmax=100,
+                showscale=True if i == 0 else False,
+                colorbar=dict(title="Values", x=0.425, len=0.8, thickness=20),
+                visible=visible,
+                hovertemplate='hum: %{x}<br>temp: %{y}<br>value: %{z}<extra></extra>'
+            ),
+            row=1, col=1
+        )
+        fig.add_trace(
+            go.Heatmap(
+                z=Pi[i, :, :],
+                colorscale='Plasma',
+                zmin=0, zmax=2,
+                showscale=True if i == 0 else False,
+                colorbar=dict(title="Actions", x=0.99, len=0.8, thickness=20),
+                visible=visible,
+                hovertemplate='hum: %{x}<br>temp: %{y}<br>action: %{z}<extra></extra>'
+            ),
+            row=1, col=2
+        )
+
+    steps = []
+    for i in range(n_slices):
+        step = dict(
+            method="update",
+            args=[
+                {"visible": [False] * (2 * n_slices)},
+            ],
+            label=str(i)
+        )
+        step["args"][0]["visible"][2 * i] = True
+        step["args"][0]["visible"][2 * i + 1] = True
+        steps.append(step)
+
+    sliders = [dict(
+        active=0,
+        currentvalue={"prefix": "Growth: "},
+        steps=steps
+    )]
+
+    for i in range(1, 3):
+        fig.update_xaxes(title_text="Humidity", row=1, col=i, title_font={"size": 10}, title_standoff=5,
+                         tickvals=np.arange(0, 11), ticktext=np.arange(0, 11))
+        fig.update_yaxes(title_text="Temperature", row=1, col=i, title_font={"size": 10}, title_standoff=5,
+                         tickvals=np.arange(0, 11), ticktext=np.arange(0, 11))
+
+    fig.update_traces(showscale=True)
+
+    sub_X = ['x1', 'x2']
+    sub_Y = ['y1', 'y2']
+    for j in range(2):
+        for i in range(11):
+            fig.add_shape(type="line", x0=i - 0.5, y0=-0.5, x1=i - 0.5, y1=10.5, line=dict(color="black", width=2),
+                          xref=sub_X[j], yref=sub_Y[j])
+            fig.add_shape(type="line", y0=i - 0.5, x0=-0.5, y1=i - 0.5, x1=10.5, line=dict(color="black", width=2),
+                          xref=sub_X[j], yref=sub_Y[j])
+
+    fig.update_layout(
+        sliders=sliders,
+        title_text=title,
+        width=800, height=450,
+    )
+    fig.show()
 
 
+def plot_Qs(Q, title):
+    cmap = plt.get_cmap('tab20b')
+    colors = [cmap(i / 19) for i in range(20)]
+    hex_colors = [
+        'rgba(' + ','.join([f'{int(np.round(rgb * 255))}' for rgb in color[:3]]) + f',{color[3]})'
+        for color in colors
+    ]
+
+    colorscale = [[i / 19, color] for i, color in enumerate(hex_colors)]
+    n_slices = Q.shape[0]
+
+    fig = make_subplots(
+        rows=1, cols=3,
+        subplot_titles=('Action 0', 'Action 1', 'Action 2'),
+        specs=[[{}, {}, {}]]
+    )
+
+    columns = [
+        {'col': 1, 'showscale': True, 'colorbar': None},
+        {'col': 2, 'showscale': True, 'colorbar': None},
+        {'col': 3, 'showscale': True, 'colorbar': {'title': "Values", 'x': 1.34, 'len': 0.8, 'thickness': 20}}
+    ]
+
+    for i in range(n_slices):
+        visible = (i == 0)
+        for j, settings in enumerate(columns):
+            fig.add_trace(
+                go.Heatmap(
+                    z=Q[i, :, :, j],
+                    colorscale=colorscale,
+                    zmin=0, zmax=100,
+                    showscale=settings['showscale'] if i == 0 else False,
+                    colorbar=settings['colorbar'],
+                    visible=visible,
+                    hovertemplate='hum: %{x}<br>temp: %{y}<br>value: %{z}<extra></extra>'
+                ),
+                row=1, col=settings['col']
+            )
+
+    steps = []
+    for i in range(n_slices):
+        step = dict(
+            method="update",
+            args=[
+                {"visible": [False] * (3 * n_slices)},
+            ],
+            label=str(i)
+        )
+        step["args"][0]["visible"][3 * i] = True
+        step["args"][0]["visible"][3 * i + 1] = True
+        step["args"][0]["visible"][3 * i + 2] = True
+        steps.append(step)
+
+    sliders = [dict(
+        active=0,
+        currentvalue={"prefix": "Growth: "},
+        steps=steps
+    )]
+
+    for i in range(1, 4):
+        fig.update_xaxes(title_text="Humidity", row=1, col=i, title_font={"size": 10}, title_standoff=5,
+                         tickvals=np.arange(0, 11), ticktext=np.arange(0, 11))
+        fig.update_yaxes(title_text="Temperature", row=1, col=i, title_font={"size": 10}, title_standoff=5,
+                         tickvals=np.arange(0, 11), ticktext=np.arange(0, 11))
+
+    fig.update_traces(showscale=True)
+
+    sub_X = ['x1', 'x2', 'x3']
+    sub_Y = ['y1', 'y2', 'y3']
+    for j in range(3):
+        for i in range(11):
+            fig.add_shape(type="line", x0=i - 0.5, y0=-0.5, x1=i - 0.5, y1=10.5, line=dict(color="black", width=2),
+                          xref=sub_X[j], yref=sub_Y[j])
+            fig.add_shape(type="line", y0=i - 0.5, x0=-0.5, y1=i - 0.5, x1=10.5, line=dict(color="black", width=2),
+                          xref=sub_X[j], yref=sub_Y[j])
+
+    # Configura il layout
+    fig.update_layout(
+        sliders=sliders,
+        title_text=title,
+        width=1350, height=450,
+    )
+
+    fig.show()
+
+
+def plot_data_conditions(V, Pi,conditions, title):
+    cmap = plt.get_cmap('tab20b')
+    colors = [cmap(i / 19) for i in range(20)]
+    hex_colors = [
+        'rgba(' + ','.join([f'{int(np.round(rgb * 255))}' for rgb in color[:3]]) + f',{color[3]})'
+        for color in colors
+    ]
+
+    colorscale = [[i / 19, color] for i, color in enumerate(hex_colors)]
+    n_slices = V.shape[0]
+
+    custom_colorscale = [[-2, 'red'],[-1, 'orange'],[0, 'yellow'],[1, 'green']]
+    fig = make_subplots(
+        rows=1, cols=3,
+        subplot_titles=('State value function', 'Policy', 'Relative growth'),
+        specs=[[{}, {}, {}]],
+        horizontal_spacing = 0.09
+    )
+
+    columns = [
+        {'data':V,         'col': 1, 'colorscale':colorscale,'showscale': True,'zmin':0,'zmax':100,'colorbar': {'title': "Values", 'x': 0.265, 'len': 0.8, 'thickness': 18,'tickfont': {'size': 10}}},
+        {'data':Pi,        'col': 2, 'colorscale':'plasma',  'showscale': True,'zmin':0,'zmax':2, 'colorbar': {'title': "Actions", 'x': 0.63, 'len': 0.8, 'thickness': 18,'tickfont': {'size': 10}}},
+        {'data':conditions,'col': 3, 'colorscale':'RdBu',  'showscale': True,'zmin':-2,'zmax':1, 'colorbar': {'title': "Growth", 'x': 0.995, 'len': 0.8, 'thickness': 18,'tickfont': {'size': 10}}}
+    ]
+
+    for i in range(n_slices):
+        visible = (i == 0)
+        for j, settings in enumerate(columns):
+            fig.add_trace(
+                go.Heatmap(
+                    z=columns[j]['data'][i, :, :],
+                    colorscale=columns[j]['colorscale'],
+                    zmin=columns[j]['zmin'], zmax=columns[j]['zmax'],
+                    showscale=settings['showscale'] if i == 0 else False,
+                    colorbar=settings['colorbar'],
+                    visible=visible,
+                    hovertemplate='hum: %{x}<br>temp: %{y}<br>value: %{z}<extra></extra>'
+                ),
+                row=1, col=settings['col']
+            )
+
+    steps = []
+    for i in range(n_slices):
+        step = dict(
+            method="update",
+            args=[
+                {"visible": [False] * (3 * n_slices)},
+            ],
+            label=str(i)
+        )
+        step["args"][0]["visible"][3 * i] = True
+        step["args"][0]["visible"][3 * i + 1] = True
+        step["args"][0]["visible"][3 * i + 2] = True
+        steps.append(step)
+
+    sliders = [dict(
+        active=0,
+        currentvalue={"prefix": "Growth: "},
+        steps=steps
+    )]
+
+    for i in range(1, 4):
+        fig.update_xaxes(title_text="Humidity", row=1, col=i, title_font={"size": 10}, title_standoff=5,
+                         tickvals=np.arange(0, 11), ticktext=np.arange(0, 11))
+        fig.update_yaxes(title_text="Temperature", row=1, col=i, title_font={"size": 10}, title_standoff=5,
+                         tickvals=np.arange(0, 11), ticktext=np.arange(0, 11))
+
+    fig.update_traces(showscale=True)
+
+    sub_X = ['x1', 'x2', 'x3']
+    sub_Y = ['y1', 'y2', 'y3']
+    for j in range(3):
+        for i in range(11):
+            fig.add_shape(type="line", x0=i - 0.5, y0=-0.5, x1=i - 0.5, y1=10.5, line=dict(color="black", width=2),
+                          xref=sub_X[j], yref=sub_Y[j])
+            fig.add_shape(type="line", y0=i - 0.5, x0=-0.5, y1=i - 0.5, x1=10.5, line=dict(color="black", width=2),
+                          xref=sub_X[j], yref=sub_Y[j])
+
+    # Configura il layout
+    fig.update_layout(
+        sliders=sliders,
+        title_text=title,
+        width=1050, height=450,
+    )
+
+    fig.show()
