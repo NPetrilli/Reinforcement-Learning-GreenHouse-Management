@@ -7,6 +7,12 @@ from scipy.ndimage import uniform_filter1d
 from plotly.subplots import make_subplots
 
 def plot_V_single(matrix, index, title):
+    '''
+    :param matrix: Plot single heatmap function
+    :param index:  Index of tensor matrix
+    :param title:  Title for the plot
+    :return:
+    '''
     fig = plt.figure(figsize=(12, 6))
     ax = plt.subplot(1, 2, 1)
     matrix_flipped = np.flipud(matrix[index, :, :])
@@ -27,6 +33,9 @@ def plot_V_single(matrix, index, title):
     plt.show()
 
 def plot_value_dyn(matrix, start_index, end_index, title=None):
+    '''
+    :return: Plot value function dynamically
+    '''
     cmap = plt.get_cmap('tab20b')
     colors = [cmap(i / 19) for i in range(20)]
     hex_colors = [
@@ -87,6 +96,9 @@ def plot_value_dyn(matrix, start_index, end_index, title=None):
     return fig
 
 def plot_policy_dyn(V, start_index, end_index):
+    '''
+    :return: Plot policy dynamically
+    '''
     color_mapping={0: 'blue', 1: 'yellow', 2: 'red'}
     colorscale = [[k / (len(color_mapping) - 1), v] for k, v in enumerate(color_mapping.values())]
 
@@ -140,7 +152,6 @@ def plot_policy_dyn(V, start_index, end_index):
 
     return fig
 
-
 def training_plot(data_collection, win_length):
     learning_result = []
     learning_length = []
@@ -169,21 +180,23 @@ def training_plot(data_collection, win_length):
     plt.show()
 
 def training_plot2(data_collection, win_length, sample_rate=1):
-    fig, ax = plt.subplots(figsize=(6, 4))  # Usando un solo asse
-    # Processa i dati per ciascun metodo
-    for episode_rewards, _, label in data_collection:  # Ignora episode_lengths
+    '''
+    :return: Learning curvers
+    '''
+    fig, ax = plt.subplots(figsize=(6, 4))
+
+    for episode_rewards, _, label in data_collection:
         if len(episode_rewards) >= win_length:
-            # Calcolo efficiente della media mobile
+
             rewards = uniform_filter1d(episode_rewards, size=win_length, mode='reflect') / win_length
 
-            # Campionamento dei dati per ridurre la densità dei plot
+
             sampled_indices = np.arange(0, len(rewards), sample_rate)
             sampled_rewards = rewards[sampled_indices]
 
-            # Plot dei dati campionati
+
             ax.plot(sampled_indices, sampled_rewards, label=f"{label}")
 
-    # Imposta titoli ed etichette
     ax.set_title("Episode Returns")
     ax.legend()
     ax.grid(True)
@@ -191,43 +204,10 @@ def training_plot2(data_collection, win_length, sample_rate=1):
     plt.tight_layout()
     plt.show()
 
-
-
-
-
-
-
-# def training_plot2(data_collection, win_length, sample_rate=1):
-#     fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(12, 4))
-#     # Process each method's data
-#     for episode_rewards, episode_lengths, label in data_collection:
-#         if len(episode_rewards) >= win_length:
-#             # Efficiently compute moving average
-#             rewards = uniform_filter1d(episode_rewards, size=win_length, mode='reflect') / win_length
-#             lengths = uniform_filter1d(episode_lengths, size=win_length, mode='reflect') / win_length
-#
-#             # Sample data to reduce plot density
-#             sampled_indices = np.arange(0, len(rewards), sample_rate)
-#             sampled_rewards = rewards[sampled_indices]
-#             sampled_lengths = lengths[sampled_indices]
-#
-#             # Plotting the sampled data
-#             ax1.plot(sampled_indices, sampled_rewards, label=f"{label}")
-#             ax2.plot(sampled_indices, sampled_lengths, label=f"{label}")
-#
-#     # Set titles and labels
-#     ax1.set_title("Episode Returns")
-#     ax1.legend()
-#     ax1.grid(True)
-#
-#     ax2.set_title("Episode Lengths")
-#     ax2.legend()
-#     ax2.grid(True)
-#
-#     plt.tight_layout()
-#     plt.show()
-
 def plot_V_policy(V, Pi, title):
+    '''
+    :return: Plot state value function and policy dynamically
+    '''
     cmap = plt.get_cmap('tab20b')
     colors = [cmap(i / 19) for i in range(20)]
     hex_colors = [
@@ -315,8 +295,10 @@ def plot_V_policy(V, Pi, title):
     )
     fig.show()
 
-
 def plot_Qs(Q, title):
+    '''
+    :return: Plot state action value function dynamically
+    '''
     cmap = plt.get_cmap('tab20b')
     colors = [cmap(i / 19) for i in range(20)]
     hex_colors = [
@@ -392,7 +374,6 @@ def plot_Qs(Q, title):
             fig.add_shape(type="line", y0=i - 0.5, x0=-0.5, y1=i - 0.5, x1=10.5, line=dict(color="black", width=2),
                           xref=sub_X[j], yref=sub_Y[j])
 
-    # Configura il layout
     fig.update_layout(
         sliders=sliders,
         title_text=title,
@@ -401,8 +382,13 @@ def plot_Qs(Q, title):
 
     fig.show()
 
-
 def plot_data_conditions(V, Pi,conditions, title):
+    '''
+    :param V: state value function
+    :param Pi: policy
+    :param conditions: Relative growth respect policy
+    :return: Plot V, Pi and relative growth toghether dynamically
+    '''
     cmap = plt.get_cmap('tab20b')
     colors = [cmap(i / 19) for i in range(20)]
     hex_colors = [
@@ -480,7 +466,6 @@ def plot_data_conditions(V, Pi,conditions, title):
             fig.add_shape(type="line", y0=i - 0.5, x0=-0.5, y1=i - 0.5, x1=10.5, line=dict(color="black", width=2),
                           xref=sub_X[j], yref=sub_Y[j])
 
-    # Configura il layout
     fig.update_layout(
         sliders=sliders,
         title_text=title,
