@@ -2,6 +2,9 @@ import numpy as np
 import pygame
 
 def pars_loader(N_episodes,alpha,gamma,eps,pt,ph,growth_range,factor_range,ci_range,ci_g_range,ci_range_sim,action_set=[0,1,2]):
+    '''
+    :return: Function to load parameters of the problem
+    '''
     pars= {
     'N_episodes':N_episodes,
     'alpha': alpha,  # Learning rate
@@ -27,6 +30,12 @@ def pars_loader(N_episodes,alpha,gamma,eps,pt,ph,growth_range,factor_range,ci_ra
     return pars
 
 def load_images(base_path, count=None, scale=None):
+    '''
+    :param base_path: Path to folder containing images
+    :param count: How many images to load for each category
+    :param scale: Scale for each scale
+    :return: Function to load images for graphic interface
+    '''
     if count is None:
         try:
             img = pygame.image.load(f"{base_path}.png")
@@ -51,17 +60,22 @@ def load_images(base_path, count=None, scale=None):
         return images
 
 def render_text(window, font, text, position, color=(255, 255, 255)):
+    '''
+    :return: Render the text for graphic interface
+    '''
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect(center=position)
     window.blit(text_surface, text_rect)
 
 def get_color_for_value(value, range_lists):
+    '''
+    :return: Color for each condition for graphic interface
+    '''
     colors = [(39, 174, 96), (241, 196, 15), (230, 126, 34), (231, 76, 60)]
     for idx, range_list in enumerate(range_lists):
         if value in range_list:
             return colors[idx]
-    return (0, 0, 0)  # default color
-
+    return (0, 0, 0)
 
 def init_policy(pars):
     """
@@ -76,6 +90,11 @@ def init_policy(pars):
     return policy
 
 def recover_policy_V(Q,pars):
+    '''
+    :param Q: Action state value function
+    :param pars: Parameters of the problem
+    :return: Greedy policy and state value function from Q
+    '''
     policy=np.zeros(pars['nstates'],dtype=int)
     V=np.zeros(pars['nstates'])
     for i in range(pars['nstates'][0]):
@@ -86,6 +105,12 @@ def recover_policy_V(Q,pars):
     return policy,V
 
 def epsilon_greedy(pars,state,Q):
+    '''
+    :param pars: Problem parameters
+    :param state: Actual state
+    :param Q: Action state action value function
+    :return: Action through epsilon greedy policy
+    '''
     if np.random.random() < pars['eps']:
      a = np.random.choice(pars['action_set'])
     else:
@@ -93,6 +118,9 @@ def epsilon_greedy(pars,state,Q):
     return a
 
 def growth_to_matrix(growth, temp, hum, range_tem, range_hum):
+    '''
+    :return: Given a state compute the relative growth
+    '''
     #At least one red: bad condition to growth -2
     if temp in range_tem[3] or hum in range_hum[3]:
       growth+=-2
@@ -107,8 +135,10 @@ def growth_to_matrix(growth, temp, hum, range_tem, range_hum):
      growth+=1
     return growth
 
-
 def condition_to_matrix(pars):
+    '''
+    :return: Given parameters computer the relative growth respect conditions
+    '''
     gr = np.zeros((pars['nstates'][0], pars['nstates'][1], pars['nstates'][2]))
     for i in np.arange(1, 5):
         for j in range(pars['nstates'][1]):
@@ -116,6 +146,7 @@ def condition_to_matrix(pars):
                 range_tem, range_hum = pars['opt_range'][i]['Tem'], pars['opt_range'][i]['Hum']
                 gr[i, j, k] = growth_to_matrix(0, j, k, range_tem, range_hum)
     return gr
+
 def make_episode_env(env, policy, pars,sim=False, x0=None):
     """
     :param env: Environment to render
@@ -128,7 +159,7 @@ def make_episode_env(env, policy, pars,sim=False, x0=None):
     seq_action = []
     seq_reward = []
 
-    # Stato iniziale
+    # Initial state
     state, info = env.reset(options=x0)
     seq_state.append(state)
     done = False
@@ -147,7 +178,6 @@ def make_episode_env(env, policy, pars,sim=False, x0=None):
         seq_reward.append(reward)
 
     return seq_state, seq_action, seq_reward
-
 
 def state_value_MC(st_list, ac_list, re_list, pars):
     '''
@@ -177,7 +207,6 @@ def state_value_MC(st_list, ac_list, re_list, pars):
                 V[s] += 1 / counter[s] * (G - V[s])
 
     return V
-
 
 def action_state_value_MC(st_list, ac_list, re_list, pars, Q0=None, counter_s_a_0=None):
     '''
@@ -210,31 +239,3 @@ def action_state_value_MC(st_list, ac_list, re_list, pars, Q0=None, counter_s_a_
     return Q, counter_s_a
 
 
-#
-# for _ in tqdm(range(pars['N_episodes'])):
-#     seq_state,seq_action,seq_reward=make_episode(env,policy,pars)
-# env.close()
-
-# x0={'g': 2, 'temp': 5, 'hum': 3}
-
-
-
-# opt_range = {}
-# #Germinazione
-# opt_range[1] = {'Tem': [[4,5,6], [2, 3, 7], [1,8,9], [0, 10]], 'Hum': [[6, 7, 8], [4, 5,9], [1,2,3], [0,10]]}
-# #Crescita iniziale
-# opt_range[2] = {'Tem': [[6, 7, 8], [4, 5,9], [1,2,3], [0,10]], 'Hum': [[4,5,6], [2,3, 7], [1,8,9], [0, 10]]}
-# #Crescita avanzanta
-# opt_range[3] = {'Tem': [[6, 7,8], [4, 5, 9], [1, 2, 3], [0,10]], 'Hum': [[5,6, 7], [3, 4, 8], [1, 2, 9], [0, 10]]}
-# #Maturazione
-# opt_range[4] = {'Tem': [[4, 5, 6], [2, 3, 7, 8], [1, 9], [0, 10]], 'Hum': [[5,6,7], [3,4,8], [1, 2, 9], [0, 10]]}
-#
-# pars['opt_range'] = opt_range
-
-
-    # 'opt_range': {
-    #     1: {'Tem': [[6], [5, 7], [1,2,3,4,8,9], [0, 10]], 'Hum': [[4], [3, 5], [1,2,6,7,8,9], [0, 10]]},
-    #     2: {'Tem': [[4], [3, 5], [1, 2, 6,7,8,9], [0, 10]], 'Hum': [[7], [6,8], [1,2,3,4,5,9], [0, 10]]},
-    #     3: {'Tem': [[8], [7], [1, 2,3,4,5,6, 9], [0, 10]], 'Hum': [[3], [2, 4], [1,5,6,7,8, 9], [0, 10]]},
-    #     4: {'Tem': [[3], [2,4], [1,5,6,7,8,9], [0, 10]], 'Hum': [[8], [7], [1, 2, 3,4,5,6,9], [0, 10]]}}
-    # }
